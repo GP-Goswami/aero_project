@@ -46,21 +46,26 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
+from selenium.webdriver.chrome.service import Service
 
 def prepare_driver(headless=True, user_agent=None):
     options = Options()
+    print("part4-------")
     if headless:
         # For modern Chrome, headless=new is recommended; if your chrome version doesn't support it, remove '=new'
         options.add_argument("--headless=new")
     options.add_argument("--disable-gpu")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
+    print("part5-------")
     # optional user agent
     if user_agent:
         options.add_argument(f'--user-agent={user_agent}')
+        print("part6-------")
 
     # initialize driver via webdriver-manager (auto-download)
-    driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
     return driver
 
 def normalize_url(raw):
@@ -68,58 +73,72 @@ def normalize_url(raw):
     If raw seems like a local path, convert to file:// URL.
     Otherwise return as-is (assumed to be http/https).
     """
+    print("part8-------")
     raw = str(raw).strip()
     if raw.lower().startswith("http://") or raw.lower().startswith("https://") or raw.lower().startswith("file://"):
+        print("part9-------")
         return raw
     # If it's an absolute Windows path like C:\... or Unix /home/..., convert
     if os.path.exists(raw):
         # on Windows, need to replace backslashes
+        print("part10-------")
         path = os.path.abspath(raw)
         return "file:///" + path.replace("\\", "/")
     # fallback: return raw
     return raw
 
-def extract_fields_from_page(driver, xpaths, wait_timeout=8):
+def extract_fields_from_page(driver, xpaths, wait_timeout=50):
     """
     Given a webdriver on a loaded page and a dict of xpaths, return a dict field->value or None.
     """
     results = {}
     for field, xpath in xpaths.items():
         try:
+            print("part13-------",xpaths)
             # wait until element is present (but not too long)
             el = WebDriverWait(driver, wait_timeout).until(
                 EC.presence_of_element_located((By.XPATH, xpath))
             )
             # get text. If it's an <a href="mailto:...">, keep text or href if text empty
             text = el.text.strip()
+            print("text",text)
             if not text:
                 # try attributes like href or alt or title
+                print("part14-------")
                 try:
+                    
                     href = el.get_attribute("href")
                     if href:
+                        print("part15-------",href)
                         text = href.strip()
                 except Exception:
                     text = ""
             results[field] = text
+            print("part16-------")
         except TimeoutException:
             # element not found in time
+            print("part18-------")
             results[field] = None
         except Exception as e:
             # anything else (stale element, etc.)
+            print("part9-------",e)
             results[field] = None
     return results
 
 def main(args):
     # load input csv
+    print("part1-------")
     df = pd.read_csv(args.input)
     if 'url' not in df.columns:
         raise SystemExit("Input CSV must have a column named 'url' with URLs or local file paths.")
+        print("part2-------")
 
     # load xpaths mapping json
     with open(args.xpaths, 'r', encoding='utf-8') as f:
         xpaths = json.load(f)
     if not isinstance(xpaths, dict) or not xpaths:
         raise SystemExit("XPaths file should be a JSON object mapping field names to XPaths.")
+        print("part3-------")
 
     # prepare selenium driver
     print("Starting Chrome driver...")
@@ -127,12 +146,18 @@ def main(args):
 
     results = []
     try:
+        print("part7-------")
+        count=0
         for idx, row in df.iterrows():
+            if count==1:
+                break
+            count+=1
             raw_url = row['url']
             url = normalize_url(raw_url)
             print(f"[{idx+1}/{len(df)}] Visiting: {url}")
 
             try:
+                print("part11-------")
                 driver.get(url)
             except WebDriverException as e:
                 print(f"  ERROR loading page: {e}")
@@ -143,10 +168,12 @@ def main(args):
             time.sleep(args.post_load_sleep)
 
             # extract fields
+            print("part12-------")
             data = extract_fields_from_page(driver, xpaths, wait_timeout=args.wait_timeout)
             results.append({"source": raw_url, **data})
 
             # polite delay between requests
+            print("part17-------",results)
             time.sleep(args.delay_between_pages)
 
     finally:

@@ -2,3 +2,10 @@ pandas
 bs4
 requests
 twilio
+dotenv
+selenium
+webdriver_manager
+openpyxl
+fastapi
+uvicorn
+pydantic

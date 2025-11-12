@@ -1,0 +1,1086 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Autodialer — UI Prototype</title>
+    <style>
+        :root {
+            --bg: #0f1724;
+            --card: #0b1220;
+            --muted: #9aa7b2;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --glass: rgba(255, 255, 255, 0.03)
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, Roboto, 'Segoe UI', Arial
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, #071027 0%, #0c1220 100%);
+            color: #e6eef3;
+            min-height: 100vh
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 28px auto;
+            padding: 20px
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px
+        }
+
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        .logo {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #06b6d4, #7c3aed);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px
+        }
+
+        p.lead {
+            margin: 0;
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
+        }
+
+        .row {
+            display: flex;
+            gap: 14px
+        }
+
+        .col {
+            flex: 1
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px
+        }
+
+        .tab {
+            padding: 10px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            background: var(--glass);
+            color: var(--muted);
+            border: 1px solid rgba(255, 255, 255, 0.02)
+        }
+
+        .tab.active {
+            background: linear-gradient(90deg, #082032, #0b2540);
+            color: #e6f6f3;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            box-shadow: 0 6px 18px rgba(2, 6, 23, 0.5)
+        }
+
+        /* Main layout */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 16px;
+            margin-top: 16px
+        }
+
+        /* Left panel */
+        .panel {
+            padding: 12px;
+            border-radius: 10px
+        }
+
+        .action-grid {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px
+        }
+
+        .action {
+            flex: 1;
+            padding: 12px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent);
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer
+        }
+
+        .action h3 {
+            margin: 0;
+            font-size: 14px
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        /* Upload area */
+        .uploader {
+            display: flex;
+            gap: 12px
+        }
+
+        textarea#numbers {
+            width: 100%;
+            height: 180px;
+            background: #071427;
+            border-radius: 8px;
+            padding: 12px;
+            color: #e6eef3;
+            border: 1px dashed rgba(255, 255, 255, 0.04)
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 220px
+        }
+
+        .btn {
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: #042018;
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        .btn.ghost {
+            background: transparent;
+            color: var(--muted);
+            border: 1px solid rgba(255, 255, 255, 0.04)
+        }
+
+        /* Number list */
+        .number-list {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 8px
+        }
+
+        .number-item {
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.02)
+        }
+
+        .number-item.selected {
+            background: linear-gradient(90deg, #052e1d, #083b2a);
+            border: 1px solid rgba(16, 185, 129, 0.16);
+            box-shadow: 0 6px 14px rgba(7, 30, 18, 0.5)
+        }
+
+        .number-item.failed {
+            background: rgba(255, 20, 20, 0.06);
+            border-color: rgba(255, 69, 69, 0.12)
+        }
+
+        .number-item.success {
+            background: rgba(16, 185, 129, 0.06);
+            border-color: rgba(16, 185, 129, 0.12)
+        }
+
+        /* Right sidebar */
+        .sidebar .section {
+            margin-bottom: 12px
+        }
+
+        .stats {
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02)
+        }
+
+        .log {
+            height: 280px;
+            overflow: auto;
+            padding: 8px;
+            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.01), transparent);
+            font-size: 13px
+        }
+
+        /* Dialpad */
+        .dialpad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            padding: 12px
+        }
+
+        .key {
+            padding: 18px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            text-align: center;
+            cursor: pointer
+        }
+
+        .dial-display {
+            height: 44px;
+            border-radius: 8px;
+            padding: 8px;
+            background: #071427;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px
+        }
+
+        /* chatbot */
+        .chatbot-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: linear-gradient(90deg, #7c3aed, #06b6d4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(7, 10, 25, 0.6)
+        }
+
+        .chat-modal {
+            position: fixed;
+            right: 20px;
+            bottom: 92px;
+            width: 360px;
+            background: var(--card);
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.6);
+            display: none;
+            flex-direction: column
+        }
+
+        .chat-modal.open {
+            display: flex
+        }
+
+        .chat-area {
+            height: 220px;
+            overflow: auto;
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 8px
+        }
+
+        .chat-input textarea {
+            flex: 1;
+            height: 56px;
+            border-radius: 8px;
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: transparent;
+            color: inherit
+        }
+
+
+        .dial-input {
+            width: 90%;
+            margin: 6px 0;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            background-color: rgba(0, 0, 0, 0.2);
+            color: #fff;
+            font-size: 16px;
+            text-align: center;
+            outline: none;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .dial-input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* Blog blocks */
+        #blog-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .blockedAnswers {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 12px;
+            width: 100%;
+        }
+
+        .answer-box {
+            border: 1px solid #10b981;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 10px;
+            color: white;
+            /* max-height: 7em; */
+            /* about 3–4 lines */
+            overflow: hidden;
+            line-height: 1.3em;
+        }
+
+        /* .answer-box::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2em;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+        } */
+
+        .read-more {
+            display: inline-block;
+            margin-top: 6px;
+            color: #10b981;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+
+        .extra-post {
+            border-top: 1px dashed #10b981;
+            margin-top: 6px;
+            padding-top: 4px;
+            font-size: 0.9em;
+            color: #cbd5e1;
+        }
+
+
+        /* Popup styles */
+        #blog-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(3px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        #blog-popup.show {
+            display: flex;
+        }
+
+        .popup-content {
+            background: #101820;
+            color: white;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+
+        #closePopup {
+            position: absolute;
+            top: 8px;
+            right: 12px;
+            cursor: pointer;
+            font-size: 1.5em;
+            color: #10b981;
+        }
+
+
+
+        footer.note {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        @media(max-width:900px) {
+            .main {
+                grid-template-columns: 1fr
+            }
+
+            .sidebar {
+                order: 2
+            }
+        }
+    </style>
+
+
+    <!-- <div id="chatArea"></div> -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script src="./frontend.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="brand">
+                <div class="logo">AD</div>
+                <div>
+                    <h1>AeroleadAI</h1>
+                    <p class="lead">Smart call and blog with AI-agent</p>
+                </div>
+            </div>
+            <div class="tabs" role="tablist">
+                <div class="tab active" id="tab-call">Call</div>
+                <div class="tab" id="tab-blog">Blog</div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="col">
+                <div class="card panel" id="call-panel">
+                    <div class="action-grid">
+                        <div class="action" id="act-upload">
+                            <h3>Upload Numbers</h3>
+                            <div class="muted">Paste or upload CSV/ TXT</div>
+                        </div>
+                        <div class="action" id="act-dialpad">
+                            <h3>Dialpad</h3>
+                            <div class="muted">Chat with your friend</div>
+                        </div>
+                    </div>
+
+                    <!-- Upload area (default hidden until upload selected) -->
+                    <div id="upload-area" style="display:block;margin-top:6px">
+                        <div class="uploader">
+                            <div style="flex:1">
+                                <label class="muted">Paste numbers (one per line)</label>
+                                <textarea id="numbers" placeholder="e.g.
+18001234567
+18007654321
++911234567890"></textarea>
+
+                                <div style="display:flex;gap:8px;margin-top:8px">
+                                    <input type="file" id="fileInput" accept=".txt,.csv" />
+                                    <button class="btn" id="parseBtn">Parse & Add</button>
+                                    <button class="btn ghost" id="clearBtn">Clear</button>
+                                </div>
+
+                                <div class="number-list card" id="numberList" style="margin-top:12px"></div>
+                            </div>
+
+                            <!-- <div class="controls card">
+                                <div style="font-weight:700">AI prompt</div>
+                                <div class="muted" style="font-size:13px">Type an instruction for the AI assistant (for
+                                    calls or blog)</div>
+                                <textarea id="aiPrompt"
+                                    style="height:120px;margin-top:8px;padding:8px;background:#071427;border-radius:8px;color:inherit"></textarea>
+                                <button class="btn" id="runAiBtn">Run AI (simulate)</button>
+
+                                <div style="margin-top:18px">
+                                    <div style="font-weight:700">Quick actions</div>
+                                    <button class="btn ghost" id="startCalls">Start Calls</button>
+                                    <button class="btn ghost" id="stopCalls">Stop</button>
+                                </div>
+                            </div> -->
+                        </div>
+                    </div>
+
+                    <!-- Dialpad area -->
+                    <div id="dialpad-area" style="display:none;margin-top:12px">
+                        <div class="card">
+                            <div class="dialpad-inputs">
+                                <input type="text" id="userdialDisplay" class="dial-input"
+                                    placeholder="Enter Your number" />
+                                <input type="text" id="customerdialDisplay" class="dial-input"
+                                    placeholder="Enter Customer number" />
+                            </div>
+
+                            <div class="dialpad">
+                                <div class="key">1</div>
+                                <div class="key">2</div>
+                                <div class="key">3</div>
+                                <div class="key">4</div>
+                                <div class="key">5</div>
+                                <div class="key">6</div>
+                                <div class="key">7</div>
+                                <div class="key">8</div>
+                                <div class="key">9</div>
+                                <div class="key">*</div>
+                                <div class="key">0</div>
+                                <div class="key">#</div>
+                            </div>
+                            <div style="display:flex;gap:8px;margin-top:8px">
+                                <button class="btn" id="addDial">Call</button>
+                                <button class="btn ghost" id="clearDial">Clear</button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="blog-container"></div>
+
+                <!-- if blog then open -->
+                <!-- Popup -->
+                <div id="blog-popup" class="hidden">
+                    <div class="popup-content">
+                        <span id="closePopup">&times;</span>
+                        <div id="popupText"></div>
+                    </div>
+                </div>
+
+                <!-- Blog panel (simple placeholder) -->
+                <div class="card panel" id="blog-panel" style="display:none;margin-top:14px">
+
+                    <h3>Blog Section </h3>
+                    <p class="muted">This area will hold blog creation tools and an AI prompt for drafting posts. We'll
+                        implement after call flow.</p>
+
+                    <div class="blockedAnswers" id="blog-panel">
+                        <div class="blog-preview" margin: 10px> </div>
+                        <span class="read-more"></span>
+                    </div>
+
+                    <!-- Input section -->
+                    <div id="blogInputSection" style="margin-top:10px">
+                        <label class="muted">AI prompt for blog</label>
+                        <textarea id="blogAi"
+                            style="width:100%;height:120px;margin-top:8px;padding:8px;background:#071427;border-radius:8px;color:inherit"></textarea>
+                        <div style="display:flex;gap:8px;margin-top:8px">
+                            <button class="btn" id="genBlog">Generate</button>
+                            <button class="btn ghost" id="clearBlog">Clear</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <!-- Popup -->
+            <div id="blog-popup" class="popup">
+                <div class="popup-content">
+                    <span id="closePopup" class="close-btn">&times;</span>
+                    <div id="popupText"></div>
+                </div>
+            </div>
+
+            <aside class="sidebar" id="sidesbar">
+                <div class="card section">
+                    <h4 style="margin:0">Summary</h4>
+                    <div class="muted" style="font-size:13px">Upload numbers and control calls from here</div>
+                </div>
+
+                <div class="card section stats">
+                    <div class="stat">
+                        <div>Total uploaded</div>
+                        <div id="statTotal">0</div>
+                    </div>
+                    <div class="stat">
+                        <div>Selected / queued</div>
+                        <div id="statSelected">0</div>
+                    </div>
+                    <div class="stat">
+                        <div>Success</div>
+                        <div id="statSuccess">0</div>
+                    </div>
+                    <div class="stat">
+                        <div>Failed</div>
+                        <div id="statFailed">0</div>
+                    </div>
+                    <div class="stat">
+                        <div>Remaining</div>
+                        <div id="statRemaining">0</div>
+                    </div>
+                </div>
+
+                <div class="card section">
+                    <h4 style="margin:0">Call Log</h4>
+                    <div class="muted" style="font-size:13px">Realtime events will appear here</div>
+                    <div class="log" id="callLog"></div>
+                </div>
+            </aside>
+
+        </div>
+
+        <footer class="note">Note: This is a Aerolead prototype only. This is created for testing and project purpose.
+        </footer>
+    </div>
+
+    <!-- Chatbot button + modal -->
+    <div class="chatbot-btn" id="chatBtn" title="Open AI Chat">AI</div>
+    <div class="chat-modal" id="chatModal">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <strong>AI Chat</strong>
+            <button class="btn ghost" id="closeChat">Close</button>
+        </div>
+        <div class="chat-area" id="chatArea" height: 5px>
+            <!-- Messages will appear here dynamically -->
+
+        </div>
+        <div class="chat-input">
+            <textarea id="chatInput" placeholder="Write instruction or message..."></textarea>
+            <button class="btn" id="sendChat">Send</button>
+        </div>
+    </div>
+
+    <script>
+        // Simple frontend logic to demonstrate behavior — replace AJAX endpoints with your Rails routes
+        const tabCall = document.getElementById('tab-call');
+        const tabBlog = document.getElementById('tab-blog');
+        const callPanel = document.getElementById('call-panel');
+        const blogPanel = document.getElementById('blog-panel');
+
+        tabCall.onclick = () => { tabCall.classList.add('active'); tabBlog.classList.remove('active'); callPanel.style.display = 'block'; blogPanel.style.display = 'none' }
+        tabBlog.onclick = () => { tabBlog.classList.add('active'); tabCall.classList.remove('active'); callPanel.style.display = 'none'; blogPanel.style.display = 'block' }
+
+        // actions
+        document.getElementById('act-upload').onclick = () => { document.getElementById('upload-area').style.display = 'block'; document.getElementById('dialpad-area').style.display = 'none' }
+        document.getElementById('act-dialpad').onclick = () => { document.getElementById('upload-area').style.display = 'none'; document.getElementById('dialpad-area').style.display = 'block' }
+
+        const numberListEl = document.getElementById('numberList')
+        let numbers = [] // {id,raw,normalized,status}
+
+        function normalizeNumber(s) { return s.replace(/[^0-9+]/g, '').replace(/^\+91/, '+91') } // naive
+
+        function renderNumbers() {
+            numberListEl.innerHTML = ''
+            numbers.forEach((n, i) => {
+                const d = document.createElement('div')
+                d.className = 'number-item ' + (n.status || '')
+                d.textContent = n.raw
+                d.onclick = () => { n.selected = !n.selected; d.classList.toggle('selected'); updateStats(); }
+                if (n.selected) d.classList.add('selected')
+                numberListEl.appendChild(d)
+            })
+            updateStats()
+        }
+
+        function updateStats() {
+            const total = numbers.length
+            const selected = numbers.filter(x => x.selected).length
+            const success = numbers.filter(x => x.status === 'success').length
+            const failed = numbers.filter(x => x.status === 'failed').length
+            const remaining = total - success - failed
+            document.getElementById('statTotal').textContent = total
+            document.getElementById('statSelected').textContent = selected
+            document.getElementById('statSuccess').textContent = success
+            document.getElementById('statFailed').textContent = failed
+            document.getElementById('statRemaining').textContent = remaining
+        }
+
+        // parse textarea or file
+        document.getElementById('parseBtn').onclick = () => {
+            console.log("button click");
+            let numbers = document.getElementById("numbers").value.split(",");  // input -> array
+            let num = numbers[0]; // userPhoneNum
+            let customerNumbers = numbers.slice(1); // rest -> custPhoneNums
+            console.log(num, customerNumbers);
+
+            customerNumbers.forEach(element => {
+                axios.post("http://127.0.0.1:8000/calltool", {
+                    custPhoneNum: element.trim(),
+                    userPhoneNum: num.trim()
+                }).then(res => {
+                    console.log("✅ Success:", res.data);
+                    document.getElementById("callLog").innerHTML = res.data
+                })
+                    .catch(err => {
+                        console.error("❌ Error:", err);
+                    });
+            });
+
+            console.log("hii");
+
+            
+            const txt = document.getElementById('numbers').value
+            const lines = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+            lines.forEach(l => {
+                const n = { id: Date.now() + Math.random(), raw: l, normalized: normalizeNumber(l), status: '', selected: true }
+                numbers.push(n)
+            })
+            renderNumbers()
+            log('Parsed ' + lines.length + ' numbers')
+        }
+        document.getElementById('clearBtn').onclick = () => { numbers = []; renderNumbers(); document.getElementById('numbers').value = ''; log('Cleared list') }
+
+        // file input
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const f = e.target.files[0]
+            if (!f) return
+            const reader = new FileReader()
+            reader.onload = ev => {
+                document.getElementById('numbers').value = ev.target.result
+            }
+            reader.readAsText(f)
+        })
+
+
+        document.getElementById("clearBlog").onclick = () => {
+            document.getElementById("blogAi").value = ""
+        }
+
+        // genblog data
+        // document.getElementById("genBlog").onclick = () => {
+        //     const blogInput = document.getElementById("blogAi");
+        //     const container = document.querySelector(".blockedAnswers");
+        //     const blogData = blogInput.value.trim();
+
+
+        //     if (!blogData) {
+        //         alert("Enter blog data first!");
+        //         return;
+        //     }
+        //     // Confirm before posting
+        //     const confirmPost = confirm("Are you sure you want to post this blog?");
+        //     if (!confirmPost) return;
+
+
+        //     let existingBlock = Array.from(container.children).find(
+        //         el => el.textContent === blogData
+        //     );
+
+        //     container.addEventListener("click", (e) => {
+        //         if (e.target.classList.contains("read-more")) {
+        //             const parentBlock = e.target.closest(".answer-box");
+        //             const fullText = parentBlock.querySelector(".blog-preview").textContent;
+        //             showPopup(fullText);
+        //         }
+        //     });
+
+        //     if (existingBlock) {
+        //         console.log("blog hai...........");
+
+        //         // Append content to existing one
+        //         const extraDiv = document.createElement("div");
+        //         extraDiv.classList.add("extra-post");
+        //         extraDiv.textContent = blogData;
+        //         existingBlock.appendChild(extraDiv);
+        //     }
+        //     else {
+        //         console.log("blog ni hai...........");
+        //         const newAns = document.createElement("div");
+        //         newAns.classList.add("answer-box");
+        //         newAns.innerHTML = `
+        //                 <div class="blog-preview" margin: 10px>${blogData} </div>
+        //                 <span class="read-more">Read more</span>
+        //             `;
+
+
+        //         // append to container
+        //         container.appendChild(newAns);
+        //         requestAnimationFrame(() => {
+        //             newAns.scrollIntoView({ behavior: "smooth", block: "start" });
+        //         });
+
+        //         // Add click event for Read More
+        //         const readMore = newAns.querySelector(".read-more");
+        //         readMore.onclick = (e) => {
+        //             e.stopPropagation();
+        //             showPopup(blogData);
+        //         };
+
+        //     }
+        //     // show panel
+        //     document.getElementById("blog-panel").style.display = "block";
+        //     document.getElementById("blogAi").value = "";
+
+        //     function showPopup(content) {
+        //         const popup = document.getElementById("blog-popup");
+        //         const popupText = document.getElementById("popupText");
+        //         popupText.textContent = content;
+        //         popup.classList.add("show");
+        //     }
+
+        //     // Close popup
+        //     document.getElementById("closePopup").onclick = () => {
+        //         document.getElementById("blog-popup").classList.remove("show");
+        //     };
+
+        //     // Click outside closes popup
+        //     document.getElementById("blog-popup").addEventListener("click", (e) => {
+        //         if (e.target.id === "blog-popup") {
+        //             document.getElementById("blog-popup").classList.remove("show");
+        //         }
+        //     });
+
+        // }
+        
+        document.getElementById("genBlog").onclick = () => {
+    const blogInput = document.getElementById("blogAi");
+    const container = document.querySelector(".blockedAnswers");
+    const blogData = blogInput.value.trim();
+
+    if (!blogData) {
+        alert("Enter blog data first!");
+        return;
+    }
+
+    // Confirm before posting
+    const confirmPost = confirm("Are you sure you want to post this blog?");
+    if (!confirmPost) return;
+
+    // Find existing blog
+    let existingBlock = Array.from(container.children).find(
+        el => el.dataset.blogcontent === blogData
+    );
+
+    // if (existingBlock) {
+    //     // Append content to existing one
+    //     const preview = existingBlock.querySelector(".blog-preview");
+    //     preview.innerHTML += `<div>${blogData}</div>`;
+    // } else {
+        // Create new blog block
+        const newAns = document.createElement("div");
+        newAns.classList.add("answer-box");
+        newAns.dataset.blogcontent = blogData;
+        blogData1=blogData?.slice(0,1000)
+
+        if (blogData1){
+
+            newAns.innerHTML = `
+            <div class="blog-preview" >${blogData1} <span class="read-more">Read more</span> </div>
+            `;
+            }
+        else{
+            newAns.innerHTML = `
+            <div class="blog-preview">${blogData} </div>
+            `;
+        }
+
+        // Append new blog block
+        container.appendChild(newAns);
+
+        // Add click event for "Read more"
+        const readMore = newAns.querySelector(".read-more");
+        readMore.onclick = (e) => {
+            e.stopPropagation();
+            showPopup(blogData);
+        };
+    // }
+
+    // Clear input and adjust scroll
+    blogInput.value = "";
+    container.scrollIntoView({ behavior: "smooth", block: "end" });
+
+    // Function to show popup
+    function showPopup(content) {
+        const popup = document.getElementById("blog-popup");
+        const popupText = document.getElementById("popupText");
+        popupText.textContent = content;
+        popup.classList.add("show");
+        document.body.style.overflow = "hidden"; // prevent background scroll
+    }
+
+    // Close popup on X button
+    document.getElementById("closePopup").onclick = () => {
+        closePopup();
+    };
+
+    // Close popup when clicking outside
+    document.getElementById("blog-popup").addEventListener("click", (e) => {
+        if (e.target.id === "blog-popup") {
+            closePopup();
+        }
+    });
+
+    // Utility to close popup
+    function closePopup() {
+        const popup = document.getElementById("blog-popup");
+        popup.classList.remove("show");
+        document.body.style.overflow = "auto";
+    }
+};
+
+        
+        
+        // Dialpad actions (two displays: Customer + User)
+        const custDialInput = document.getElementById('customerdialDisplay');
+        const userDialInput = document.getElementById('userdialDisplay');
+        let activeDialTarget = null;
+
+        // Focus tracking
+        custDialInput.addEventListener("focus", () => activeDialTarget = "customer");
+        userDialInput.addEventListener("focus", () => activeDialTarget = "user");
+
+        // Keypad input logic
+        document.querySelectorAll('.key').forEach(k => {
+            k.addEventListener("click", () => {
+                if (!activeDialTarget) {
+                    alert("Click on a number field first");
+                    return;
+                }
+                const targetEl = activeDialTarget === "customer" ? custDialInput : userDialInput;
+                targetEl.value += k.textContent;
+            });
+        });
+
+        // Clear both
+        document.getElementById('clearDial').onclick = () => {
+            custDialInput.value = "";
+            userDialInput.value = "";
+            activeDialTarget = null;
+        };
+
+        // Add Dial button logic
+        document.getElementById('addDial').onclick = async () => {
+            const custVal = custDialInput.value.trim();
+            const userVal = userDialInput.value.trim();
+
+            console.log(userVal, custVal, custDialInput.value, userDialInput.value);
+
+
+            if (!custVal) return alert('Enter Customer number');
+            if (!userVal) return alert('Enter Your number');
+
+            console.log("☎️ Dialing from", userVal, "to", custVal);
+
+            try {
+                const res = await axios.post("http://127.0.0.1:8000/calltool", {
+                    custPhoneNum: custVal,
+                    userPhoneNum: userVal
+                });
+                console.log("✅ Success:", res.data);
+                document.getElementById("callLog").innerHTML = res.data;
+                log(`Call initiated: ${userVal} → ${custVal}`);
+            } catch (err) {
+                console.error("❌ Error:", err);
+                log(`Call failed: ${userVal} → ${custVal}`);
+            }
+
+            numbers.push({
+                id: Date.now() + Math.random(),
+                raw: custVal,
+                normalized: normalizeNumber(custVal),
+                status: '',
+                selected: true
+            });
+            renderNumbers();
+
+            custDialInput.value = "";
+            userDialInput.value = "";
+            activeDialTarget = null;
+        };
+
+
+
+        // simple simulation of calls — in real app, you'd POST to Rails endpoint which enqueues outbound calls
+        // let calling = false
+        // document.getElementById('startCalls').onclick = () => {
+        //     if (calling) return
+        //     calling = true; log('Starting call sequence...')
+        //     const queue = numbers.filter(n => n.selected && !n.status)
+        //     let idx = 0
+        //     function next() {
+        //         if (!calling) { log('Stopped'); return }
+        //         if (idx >= queue.length) { log('All queued calls processed'); calling = false; updateStats(); return }
+        //         const item = queue[idx]
+        //         idx++
+        //         // simulate a call result after timeout
+        //         log('Calling ' + item.raw + ' ...')
+        //         setTimeout(() => {
+        //             const ok = Math.random() > 0.3
+        //             item.status = ok ? 'success' : 'failed'
+        //             log('Result for ' + item.raw + ': ' + (ok ? 'PICKED / SUCCESS' : 'FAILED / NO ANSWER'))
+        //             renderNumbers()
+        //             next()
+        //         }, 900 + Math.random() * 1200)
+        //     }
+        //     next()
+        // }
+        // document.getElementById('stopCalls').onclick = () => { calling = false }
+
+        // AI prompt simulation
+        // document.getElementById('runAiBtn').onclick = () => {
+        //     const p = document.getElementById('aiPrompt').value.trim()
+        //     if (!p) return alert('Write an AI instruction first')
+        //     log('AI prompt submitted: "' + p + '"')
+        //     // example: simple command parsing (make a call to 1800...)
+        //     const m = p.match(/make a call to\s+([0-9+\-\s]+)/i)
+        //     if (m) { const num = m[1].trim(); numbers.push({ id: Date.now() + Math.random(), raw: num, normalized: normalizeNumber(num), status: '', selected: true }); renderNumbers(); log('AI added number ' + num); return }
+        //     log('AI did not recognise a specific actionable instruction. (This is a frontend simulation)')
+        // }
+
+        // Chatbot modal
+        const chatBtn = document.getElementById('chatBtn'), chatModal = document.getElementById('chatModal'), closeChat = document.getElementById('closeChat')
+        chatBtn.onclick = () => { chatModal.classList.toggle('open') }
+        closeChat.onclick = () => { chatModal.classList.remove('open') }
+        // document.getElementById('sendChat').onclick = () => {
+
+        // const txt = document.getElementById('chatInput').value.trim()
+        // if (!txt) return
+        // console.log(txt);
+
+        // appendChat('User', txt)
+        // document.getElementById('chatInput').value = ''
+        // // very simple interpreter — you will replace this with AI backend
+        // const m = txt.match(/make a call to\s*([0-9+\-\s]+)/i)
+        // if (m) { const num = m[1].trim(); numbers.push({ id: Date.now() + Math.random(), raw: num, normalized: normalizeNumber(num), status: '', selected: true }); renderNumbers(); appendChat('System', 'Added ' + num + ' to the call list.') }
+        // else if (txt.match(/show stats/i)) { appendChat('System', 'Total: ' + numbers.length + ', Success: ' + numbers.filter(x => x.status === 'success').length) }
+        // else appendChat('System', 'I understood: "' + txt + '" — (frontend demo).')
+        // }
+        // function appendChat(from, msg) { const el = document.createElement('div'); el.innerHTML = '<strong>' + from + ': </strong>' + msg; document.getElementById('chatArea').appendChild(el); document.getElementById('chatArea').scrollTop = document.getElementById('chatArea').scrollHeight }
+
+        function log(msg) { const t = new Date().toLocaleTimeString(); const el = document.createElement('div'); el.textContent = '[' + t + '] ' + msg; document.getElementById('callLog').prepend(el) }
+
+        // small helper: prefill example test numbers (1800 style) for safe testing
+        const example = ['18001230001', '18001230002', '18001230003', '18001230004', '18001230005', '18001230006', '18001230007', '18001230008', '18001230009', '18001230010']
+        example.forEach(n => numbers.push({ id: Date.now() + Math.random(), raw: n, normalized: normalizeNumber(n), status: '', selected: true }))
+        renderNumbers()
+
+    </script>
+</body>
+
+</html>
