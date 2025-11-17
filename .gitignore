@@ -1,2 +1,16 @@
+.env
 aero
 node_modules
+
+LinkedInProj/linkedIndata.csv
+xpath.json
+link.py
+fastapi
+__init__.cpython-313.pyc
+aeroCall.cpython-313.pyc
+mcpTools/package-lock.json
+mcpTools/package.json
+mcpTools/__pycache__/test_server.cpython-313-pytest-8.4.2.pyc
+test_server.cpython-313.pyc
+
+
