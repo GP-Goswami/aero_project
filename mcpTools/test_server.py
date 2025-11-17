@@ -1,3 +1,6 @@
+"""this file is user for create backend api or client side calling for the tools"""
+
+
 # import asyncio
 # import pytest
 # from contextlib import AsyncExitStack
@@ -20,7 +23,8 @@
 # ]
 
 # userInput=input("enter your question:- ")
-# prompt=f"you are a aero ai assistant you have to do task as explain here {userInput}"
+# prompt=f"you are a aero ai assistant you have to do task as explain here
+# {userInput}"
 
 # @pytest.mark.asyncio
 # async def test_mcp_server_connection():
@@ -63,7 +67,6 @@
 #                     tools=tools,
 #                 ),
 #             )
-    
 #     # print("response is: ",responses.candidates[0].content)
 
 #     if responses.candidates[0].content.parts[0].function_call:
@@ -82,7 +85,7 @@
 
 #         print("🛠️ Tool result:", tool_result)
 
-#         # --- Send the tool result back to Gemini so it can finish reasoning ---
+#         # --- Send the tool result back to Gemini so it can finish reasoning
 #         final_response = client.models.generate_content(
 #             model="gemini-2.0-flash",
 #             contents=[
@@ -96,7 +99,8 @@
 #             ],
 #         )
 
-#         print("🤖 Final Gemini response:", final_response.candidates[0].content.text)
+#         print("🤖 Final Gemini response:",
+#           final_response.candidates[0].content.text)
 #     else:
 #         print("response is: ",responses.candidates[0].content.parts[0].text)
 #     # tool_names = [tool.name for tool in tools]
@@ -113,19 +117,24 @@
 
 # -------------------------------
 import os
+import sys
 import asyncio
-from contextlib import AsyncExitStack
-from fastapi import FastAPI, HTTPException
+import json
+from contextlib import AsyncExitStack, asynccontextmanager
 from pydantic import BaseModel
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from google import genai
 from dotenv import load_dotenv, find_dotenv
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException
+import traceback
+from fastapi import Request
 
-import sys, os
 sys.path.append(r"C:\Users\DELL\Documents\AeroLeadPrj")
 from call.aeroCall import toolCall
+
+
 # Load environment variables
 dotenv_path = find_dotenv()
 load_dotenv(dotenv_path)
@@ -147,111 +156,155 @@ app.add_middleware(
 
 # Input model for frontend
 class UserPrompt(BaseModel):
+    """class for gemini model"""
     prompt: str | None = None
     custPhoneNum: str | None = None
     userPhoneNum: str | None = None
-    
+
 
 @app.post("/ask-gemini")
 async def ask_gemini(data: UserPrompt):
-    try:
-        """
-        Endpoint to take user input, send to Gemini, call MCP tool, and return result
-        """
-        
-        if data.prompt:
-            user_prompt = data.prompt
-        elif data.custPhoneNum and data.userPhoneNum:
-            user_prompt = f"Call customer {data.custPhoneNum} from user {data.userPhoneNum}."
-        else:
-            raise HTTPException(status_code=400, detail="Provide either prompt or both phone numbers.")
+    # """ Endpoint to take user input, send to Gemini, call MCP tool,
+    #     and return result
+    #     """
+    async with AsyncExitStack() as exit_stack:
+        try:
+            if data.prompt:
+                user_prompt = data.prompt
+            elif data.custPhoneNum and data.userPhoneNum:
+                user_prompt = f"""Call customer {data.custPhoneNum}
+                    from user {data.userPhoneNum}."""
+            else:
+                raise HTTPException(status_code=400, detail="""Provide either
+                                    prompt or both phone numbers.""")
 
-        # Step 1: Connect to MCP Server
-        exit_stack = AsyncExitStack()
-        server_params = StdioServerParameters(
-            command="python", args=[SERVER_PATH], env=None
-        )
+            # Step 1: Connect to MCP Server
+            # exit_stack = AsyncExitStack()
+            server_params = StdioServerParameters(
+                command="python", args=[SERVER_PATH], env=None
+            )
 
-        stdio_transport = await exit_stack.enter_async_context(stdio_client(server_params))
-        stdio, write = stdio_transport
-        session = await exit_stack.enter_async_context(ClientSession(stdio, write))
-        await session.initialize()
+            stdio_transport = await exit_stack.enter_async_context(stdio_client(server_params))
+            stdio, write = stdio_transport
+            session = await exit_stack.enter_async_context(ClientSession(stdio, write))
+            await session.initialize()
 
-        # Step 2: Get tools from MCP
-        response = await session.list_tools()
-        tools = response.tools
-        print("tools")
-        # Step 3: Ask Gemini what to do
-        gemini_response = client.models.generate_content(
-            model="gemini-2.0-flash",
-            contents=[
-                {
-                    "role": "user",
-                    "parts": [{"text": f"You are Aero AI. Task: {user_prompt}"}]
+            # Step 2: Get tools from MCP
+            response = await session.list_tools()
+            tools = response.tools
+            print("tools")
+            # Step 3: Ask Gemini what to do
+            gemini_response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=[
+                    {
+                        "role": "user",
+                        "parts": [{"text": f"You are Aero AI. Task:{user_prompt}"}]
+                    }
+                ],
+                config=genai.types.GenerateContentConfig(
+                    temperature=0,
+                    tools=tools,
+                ),
+            )
+
+            part = gemini_response.candidates[0].content.parts[0]
+
+            # Step 4: Handle tool call
+            if hasattr(part, "function_call") and part.function_call:
+                function_call = part.function_call
+                tool_name = function_call.name
+                arguments = function_call.args
+
+                print("Gemini selected tool:", tool_name)
+
+                tool_result = await session.call_tool(tool_name, arguments)
+                # print("ans----->", tool_result)
+                mcp_data = tool_result.structuredContent
+                # print(mcp_data, type(mcp_data))
+                # print("step 5", tool_result.structuredContent)
+
+                # Step 5: Let Gemini finish reasoning
+                if tool_name == "prompt_blogs":
+
+                    final_response = client.models.generate_content(
+                        model="gemini-2.0-flash",
+                        contents=[
+                            {
+                                "role": "model",
+                                "parts": [
+                                    {
+                                        "function_response": {
+                                            "name": tool_name,
+                                            "response": mcp_data,
+                                        }
+
+                                    }
+                                ]
+                            }
+                        ],
+                    )
+
+                    print("step6", final_response.candidates[0].content)
+                    await exit_stack.aclose()
+                    return {
+                        "tool": "prompt_blogs",
+                        "result": final_response.candidates[0].content.parts[0].text,
+                    }
+
+                # print("tool result is--->", tool_result)
+                tool_output = tool_result.structuredContent  # This is a JSON string
+                print("tooloutput",tool_output)
+                
+                # parsed = json.loads(tool_output)
+                # print("parse",tool_output.result.status_code)
+                # call_status = tool_output.result
+                # print("CALL STATUS:", call_status)
+                await exit_stack.aclose()
+                return {
+                    "tool": tool_name,
+                    "result": tool_output ,
                 }
-            ],
-            config=genai.types.GenerateContentConfig(
-                temperature=0,
-                tools=tools,
-            ),
-        )
 
-        part = gemini_response.candidates[0].content.parts[0]
-
-        # Step 4: Handle tool call
-        if hasattr(part, "function_call") and part.function_call:
-            function_call = part.function_call
-            tool_name = function_call.name
-            arguments = function_call.args
-
-            print("Gemini selected tool:", tool_name, arguments)
-
-            tool_result = await session.call_tool(tool_name, arguments)
-
-            print("step 5" , tool_result.structuredContent)
-            # Step 5: Let Gemini finish reasoning
-            # final_response = client.models.generate_content(
-            #     model="gemini-2.0-flash",
-            #     contents=[
-            #         {
-            #             "role": "model",
-            #             "parts": [
-            #                 {
-            #                     "function_response": {
-            #                         "name": tool_name,
-            #                         "response": str(tool_result),
-            #                     }
-            #                 }
-            #             ]
-            #         }
-            #     ],
-            # )
-
-            # print("step6",final_response)
+            # Step 6: If Gemini didn’t call a tool, just return its message
+            print("ggem ans is--->",part)
             await exit_stack.aclose()
+            return {"response": part.text}
+        except Exception as e:
             return {
-                "tool": tool_name,
-                # "arguments": arguments,
-                "result": tool_result.structuredContent,
-                # "final_answer": tool_result.candidates[0].content.parts[0].text,
+                "error": str(e),
+                "trace": traceback.format_exc()
             }
-
-        # Step 6: If Gemini didn’t call a tool, just return its message
-        print(part.text)
-        await exit_stack.aclose()
-        return {"response": part.text}
-    except Exception as e:
-        return (f"error is {e}")
-
 
 
 class CallRequest(BaseModel):
+    """api for calling without gemini"""
     custPhoneNum: str
+    msg: str
     userPhoneNum: str
+
 
 @app.post("/calltool")
 def call(data: CallRequest):
-    call=toolCall(data.custPhoneNum,data.userPhoneNum)
-    return call
+    """api calling"""
+    call_tool = toolCall(data.custPhoneNum, data.msg, data.userPhoneNum)
+    return call_tool
 
 
+@app.get("/")
+def nor():
+    print("hii")
+    return "welcome to aeroworld"
+
+@app.post("/call-status")
+async def call_status(request: Request):
+    data = await request.form()
+
+    call_sid = data.get("CallSid")
+    call_status = data.get("CallStatus")
+
+    print("CALL SID:", call_sid)
+    print("STATUS:", call_status)
+
+    return {"received": True}
+# ngrok config add-authtoken 35bcal5nbZeMAPCaSyH3hNkedMK_4My4Mo2idaVZ59AWMu9Fi

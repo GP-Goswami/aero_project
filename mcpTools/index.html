@@ -331,6 +331,37 @@
             color: inherit
         }
 
+        /* Popup Background */
+        .popup-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+
+        /* Popup Box */
+        .popup-box {
+            background: #0c1525;
+            padding: 25px;
+            border-radius: 14px;
+            width: 350px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Inputs */
+        .popup-box .input {
+            width: 100%;
+            padding: 10px;
+            background: #071427;
+            border: 1px solid #0e223d;
+            color: #dce4ec;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
 
         .dial-input {
             width: 90%;
@@ -513,7 +544,6 @@
 18001234567
 18007654321
 +911234567890"></textarea>
-
                                 <div style="display:flex;gap:8px;margin-top:8px">
                                     <input type="file" id="fileInput" accept=".txt,.csv" />
                                     <button class="btn" id="parseBtn">Parse & Add</button>
@@ -523,20 +553,23 @@
                                 <div class="number-list card" id="numberList" style="margin-top:12px"></div>
                             </div>
 
-                            <!-- <div class="controls card">
-                                <div style="font-weight:700">AI prompt</div>
-                                <div class="muted" style="font-size:13px">Type an instruction for the AI assistant (for
-                                    calls or blog)</div>
-                                <textarea id="aiPrompt"
-                                    style="height:120px;margin-top:8px;padding:8px;background:#071427;border-radius:8px;color:inherit"></textarea>
-                                <button class="btn" id="runAiBtn">Run AI (simulate)</button>
+                            <div id="twilioPopup" class="popup-overlay">
+                                <div class="popup-box">
+                                    <h3 style="margin-top:0;">Twilio Setup</h3>
 
-                                <div style="margin-top:18px">
-                                    <div style="font-weight:700">Quick actions</div>
-                                    <button class="btn ghost" id="startCalls">Start Calls</button>
-                                    <button class="btn ghost" id="stopCalls">Stop</button>
+                                    <label>Twilio Phone Number</label>
+                                    <input type="text" id="twilioNumber" class="input" placeholder="+1XXXXXXXXXX">
+
+                                    <label>message want to send</label>
+                                    <input type="text" id="yourMessage" class="input" placeholder="Hello Aero">
+
+                                    <div style="display:flex;gap:10px;margin-top:15px;">
+                                        <button class="btn" id="saveTwilio">Save</button>
+                                        <button class="btn ghost" id="closeTwilio">Cancel</button>
+                                    </div>
                                 </div>
-                            </div> -->
+                            </div>
+
                         </div>
                     </div>
 
@@ -544,10 +577,12 @@
                     <div id="dialpad-area" style="display:none;margin-top:12px">
                         <div class="card">
                             <div class="dialpad-inputs">
-                                <input type="text" id="userdialDisplay" class="dial-input"
-                                    placeholder="Enter Your number" />
+                                <!-- <input type="text" id="userdialDisplay" class="dial-input"
+                                    placeholder="Enter Your number (twilio default)" /> -->
                                 <input type="text" id="customerdialDisplay" class="dial-input"
                                     placeholder="Enter Customer number" />
+                                <!-- <input type="text" id="msg" class="dial-input"
+                                    placeholder="Enter your message to customer" /> -->
                             </div>
 
                             <div class="dialpad">
@@ -567,6 +602,22 @@
                             <div style="display:flex;gap:8px;margin-top:8px">
                                 <button class="btn" id="addDial">Call</button>
                                 <button class="btn ghost" id="clearDial">Clear</button>
+                            </div>
+                            <div id="twilioPopupDial" class="popup-overlay">
+                                <div class="popup-box">
+                                    <h3 style="margin-top:0;">Twilio Setup</h3>
+
+                                    <label>Twilio Phone Number</label>
+                                    <input type="text" id="twilioNumberDial" class="input" placeholder="+1XXXXXXXXXX">
+
+                                    <label>message want to send</label>
+                                    <input type="text" id="yourMessageDial" class="input" placeholder="Hello Aero">
+
+                                    <div style="display:flex;gap:10px;margin-top:15px;">
+                                        <button class="btn" id="saveTwilioDial">Save</button>
+                                        <button class="btn ghost" id="closeTwilioDial">Cancel</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -678,6 +729,7 @@
 
     <script>
         // Simple frontend logic to demonstrate behavior — replace AJAX endpoints with your Rails routes
+
         const tabCall = document.getElementById('tab-call');
         const tabBlog = document.getElementById('tab-blog');
         const callPanel = document.getElementById('call-panel');
@@ -707,13 +759,17 @@
             })
             updateStats()
         }
+        let success=0,failed=0
+        function updateStats(Total_phone,count,status) {
+            
+            const total = Total_phone.length
+            const selected = count
+                 success = (status === 'in-progress')?success++:success
+                 failed = (status=== 'failed' || status=== 'no-answer'|| status=== 'ringing')?failed+=1:failed
+            const remaining = total - count 
 
-        function updateStats() {
-            const total = numbers.length
-            const selected = numbers.filter(x => x.selected).length
-            const success = numbers.filter(x => x.status === 'success').length
-            const failed = numbers.filter(x => x.status === 'failed').length
-            const remaining = total - success - failed
+            console.log("update data is ",total, selected, success, failed, remaining);
+            
             document.getElementById('statTotal').textContent = total
             document.getElementById('statSelected').textContent = selected
             document.getElementById('statSuccess').textContent = success
@@ -722,38 +778,97 @@
         }
 
         // parse textarea or file
-        document.getElementById('parseBtn').onclick = () => {
-            console.log("button click");
-            let numbers = document.getElementById("numbers").value.split(",");  // input -> array
-            let num = numbers[0]; // userPhoneNum
-            let customerNumbers = numbers.slice(1); // rest -> custPhoneNums
-            console.log(num, customerNumbers);
+        document.getElementById('parseBtn').onclick = async () => {
+            try {
 
-            customerNumbers.forEach(element => {
-                axios.post("http://127.0.0.1:8000/calltool", {
-                    custPhoneNum: element.trim(),
-                    userPhoneNum: num.trim()
-                }).then(res => {
-                    console.log("✅ Success:", res.data);
-                    document.getElementById("callLog").innerHTML = res.data
-                })
-                    .catch(err => {
-                        console.error("❌ Error:", err);
-                    });
-            });
+                console.log("button click");
+                let numbers = document.getElementById("numbers").value
+                    .split("\n")
+                    .map(n => n.trim())
+                    .filter(n => n.length > 0)
+                console.log(typeof (numbers));
 
-            console.log("hii");
+                if (numbers.length == 0) return alert("Enter the vaild numbers")
+                document.getElementById("twilioPopup").style.display = "flex";
+                let customerNumbers = null, yourMessage = null
+                document.getElementById("closeTwilio").onclick = () => {
+                    document.getElementById("twilioPopup").style.display = "none";
+                };
 
-            
-            const txt = document.getElementById('numbers').value
-            const lines = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
-            lines.forEach(l => {
-                const n = { id: Date.now() + Math.random(), raw: l, normalized: normalizeNumber(l), status: '', selected: true }
-                numbers.push(n)
-            })
-            renderNumbers()
-            log('Parsed ' + lines.length + ' numbers')
+                document.getElementById("twilioPopup").addEventListener("click", (e) => {
+                    if (e.target.id === "twilioPopup") {
+                        document.getElementById("twilioPopup").style.display = "none";
+                    }
+                });
+
+                document.getElementById("saveTwilio").onclick = async () => {
+
+                    let numbers = document.getElementById("numbers").value
+                        .split("\n")
+                        .map(n => n.trim())
+                        .filter(n => n.length > 0);
+
+                    customerNumbers = document.getElementById("twilioNumber").value.trim();
+                    yourMessage = document.getElementById("yourMessage").value.trim();
+
+                    if (!yourMessage || !customerNumbers) {
+                        alert("Please fill in all input fields!");
+                        return;
+                    }
+
+                    document.getElementById("twilioPopup").style.display = "none";
+                    let count=1;
+                    for (const num of numbers) {
+
+                        try {
+                            console.log("Calling:", num);
+
+                            const res = await axios.post("http://127.0.0.1:8000/calltool", {
+                                custPhoneNum: num,
+                                msg: yourMessage,
+                                userPhoneNum: customerNumbers
+                            });
+                            // const status = await axios.post("http://127.0.0.1:8000/call-status", {
+                            //     // Request:res?.call?.sid
+                            // });
+
+                            updateStats(numbers, count, res.data.call_status);
+                            console.log("Success:", res.data);
+                            document.getElementById("callLog").innerHTML = res.data.call_status;
+                            count++
+
+                        } catch (err) {
+                            console.error("Error:", err);
+                        }
+                    }
+
+                    console.log("All numbers processed");
+
+
+
+                    console.log("hii");
+
+
+                    const txt = document.getElementById('numbers').value
+                    const lines = txt.split(/\r?\n/).map(s => s.trim()).filter(Boolean)
+                    lines.forEach(l => {
+                        const n = { id: Date.now() + Math.random(), raw: l, normalized: normalizeNumber(l), status: '', selected: true }
+                        numbers.push(n)
+                    })
+                    renderNumbers()
+                    log('Parsed ' + lines.length + ' numbers')
+
+                    document.getElementById("numbers").value=""
+                    document.getElementById("twilioNumber").value=""
+                    document.getElementById("yourMessage").value=""
+                };
+            }
+            catch (error) {
+                message.innerHTML = "Input is " + err;
+            }
         }
+
+
         document.getElementById('clearBtn').onclick = () => { numbers = []; renderNumbers(); document.getElementById('numbers').value = ''; log('Cleared list') }
 
         // file input
@@ -857,112 +972,115 @@
         //     });
 
         // }
-        
+
         document.getElementById("genBlog").onclick = () => {
-    const blogInput = document.getElementById("blogAi");
-    const container = document.querySelector(".blockedAnswers");
-    const blogData = blogInput.value.trim();
+            const blogInput = document.getElementById("blogAi");
+            const container = document.querySelector(".blockedAnswers");
+            const blogData = blogInput.value.trim();
 
-    if (!blogData) {
-        alert("Enter blog data first!");
-        return;
-    }
+            if (!blogData) {
+                alert("Enter blog data first!");
+                return;
+            }
 
-    // Confirm before posting
-    const confirmPost = confirm("Are you sure you want to post this blog?");
-    if (!confirmPost) return;
+            // Confirm before posting
+            const confirmPost = confirm("Are you sure you want to post this blog?");
+            if (!confirmPost) return;
 
-    // Find existing blog
-    let existingBlock = Array.from(container.children).find(
-        el => el.dataset.blogcontent === blogData
-    );
+            // Find existing blog
+            let existingBlock = Array.from(container.children).find(
+                el => el.dataset.blogcontent === blogData
+            );
 
-    // if (existingBlock) {
-    //     // Append content to existing one
-    //     const preview = existingBlock.querySelector(".blog-preview");
-    //     preview.innerHTML += `<div>${blogData}</div>`;
-    // } else {
-        // Create new blog block
-        const newAns = document.createElement("div");
-        newAns.classList.add("answer-box");
-        newAns.dataset.blogcontent = blogData;
-        blogData1=blogData?.slice(0,1000)
+            // if (existingBlock) {
+            //     // Append content to existing one
+            //     const preview = existingBlock.querySelector(".blog-preview");
+            //     preview.innerHTML += `<div>${blogData}</div>`;
+            // } else {
+            // Create new blog block
+            const newAns = document.createElement("div");
+            newAns.classList.add("answer-box");
+            newAns.dataset.blogcontent = blogData;
+            blogData1 = blogData?.slice(0, 1000)
 
-        if (blogData1){
+            if (blogData1) {
 
-            newAns.innerHTML = `
+                newAns.innerHTML = `
             <div class="blog-preview" >${blogData1} <span class="read-more">Read more</span> </div>
             `;
             }
-        else{
-            newAns.innerHTML = `
+            else {
+                newAns.innerHTML = `
             <div class="blog-preview">${blogData} </div>
             `;
-        }
+            }
 
-        // Append new blog block
-        container.appendChild(newAns);
+            // Append new blog block
+            container.appendChild(newAns);
 
-        // Add click event for "Read more"
-        const readMore = newAns.querySelector(".read-more");
-        readMore.onclick = (e) => {
-            e.stopPropagation();
-            showPopup(blogData);
+            // Add click event for "Read more"
+            const readMore = newAns.querySelector(".read-more");
+            readMore.onclick = (e) => {
+                e.stopPropagation();
+                showPopup(blogData);
+            };
+            // }
+
+            // Clear input and adjust scroll
+            blogInput.value = "";
+            container.scrollIntoView({ behavior: "smooth", block: "end" });
+
+            // Function to show popup
+            function showPopup(content) {
+                const popup = document.getElementById("blog-popup");
+                const popupText = document.getElementById("popupText");
+                popupText.textContent = content;
+                popup.classList.add("show");
+                document.body.style.overflow = "hidden"; // prevent background scroll
+            }
+
+            // Close popup on X button
+            document.getElementById("closePopup").onclick = () => {
+                closePopup();
+            };
+
+            // Close popup when clicking outside
+            document.getElementById("blog-popup").addEventListener("click", (e) => {
+                if (e.target.id === "blog-popup") {
+                    closePopup();
+                }
+            });
+
+            // Utility to close popup
+            function closePopup() {
+                const popup = document.getElementById("blog-popup");
+                popup.classList.remove("show");
+                document.body.style.overflow = "auto";
+            }
         };
-    // }
 
-    // Clear input and adjust scroll
-    blogInput.value = "";
-    container.scrollIntoView({ behavior: "smooth", block: "end" });
 
-    // Function to show popup
-    function showPopup(content) {
-        const popup = document.getElementById("blog-popup");
-        const popupText = document.getElementById("popupText");
-        popupText.textContent = content;
-        popup.classList.add("show");
-        document.body.style.overflow = "hidden"; // prevent background scroll
-    }
 
-    // Close popup on X button
-    document.getElementById("closePopup").onclick = () => {
-        closePopup();
-    };
-
-    // Close popup when clicking outside
-    document.getElementById("blog-popup").addEventListener("click", (e) => {
-        if (e.target.id === "blog-popup") {
-            closePopup();
-        }
-    });
-
-    // Utility to close popup
-    function closePopup() {
-        const popup = document.getElementById("blog-popup");
-        popup.classList.remove("show");
-        document.body.style.overflow = "auto";
-    }
-};
-
-        
-        
         // Dialpad actions (two displays: Customer + User)
         const custDialInput = document.getElementById('customerdialDisplay');
-        const userDialInput = document.getElementById('userdialDisplay');
+        // const userDialInput = document.getElementById('userdialDisplay');
+        // const messageDialInput = document.getElementById('msg')
         let activeDialTarget = null;
 
         // Focus tracking
         custDialInput.addEventListener("focus", () => activeDialTarget = "customer");
-        userDialInput.addEventListener("focus", () => activeDialTarget = "user");
+        // userDialInput.addEventListener("focus", () => activeDialTarget = "user");
+        // messageDialInput.addEventListener("focus", () => activeDialTarget = "message");
 
         // Keypad input logic
         document.querySelectorAll('.key').forEach(k => {
             k.addEventListener("click", () => {
                 if (!activeDialTarget) {
-                    alert("Click on a number field first");
+                    alert("Click on a number/message field first");
                     return;
                 }
-                const targetEl = activeDialTarget === "customer" ? custDialInput : userDialInput;
+                // const targetEl = activeDialTarget === "customer" ? custDialInput : userDialInput;
+                const targetEl = custDialInput;
                 targetEl.value += k.textContent;
             });
         });
@@ -970,51 +1088,74 @@
         // Clear both
         document.getElementById('clearDial').onclick = () => {
             custDialInput.value = "";
-            userDialInput.value = "";
+            // userDialInput.value = "";
+            // messageDialInput.value = "";
             activeDialTarget = null;
         };
 
         // Add Dial button logic
+
         document.getElementById('addDial').onclick = async () => {
-            const custVal = custDialInput.value.trim();
-            const userVal = userDialInput.value.trim();
-
-            console.log(userVal, custVal, custDialInput.value, userDialInput.value);
-
-
-            if (!custVal) return alert('Enter Customer number');
-            if (!userVal) return alert('Enter Your number');
-
-            console.log("☎️ Dialing from", userVal, "to", custVal);
-
             try {
-                const res = await axios.post("http://127.0.0.1:8000/calltool", {
-                    custPhoneNum: custVal,
-                    userPhoneNum: userVal
-                });
-                console.log("✅ Success:", res.data);
-                document.getElementById("callLog").innerHTML = res.data;
-                log(`Call initiated: ${userVal} → ${custVal}`);
-            } catch (err) {
-                console.error("❌ Error:", err);
-                log(`Call failed: ${userVal} → ${custVal}`);
+                const custVal = custDialInput.value.trim();
+                if (!custVal) return alert('Enter Customer number');
+                document.getElementById("twilioPopupDial").style.display = "flex";
+
+                document.getElementById("closeTwilioDial").onclick = () => {
+                    document.getElementById("twilioPopupDial").style.display = "none";
+                };
+
+                // const userVal = userDialInput.value.trim();
+                // const messageVal = messageDialInput.value.trim();
+                let userVal = null;
+                let messageVal = null;
+
+                document.getElementById("saveTwilioDial").onclick = async () => {
+                    userVal = document.getElementById("twilioNumberDial").value.trim();
+                    messageVal = document.getElementById("yourMessageDial").value.trim();
+                    // console.log(userVal, custVal, custDialInput.value, messageVal, messageDialInput.value);
+
+
+                    if (!userVal || !messageVal) return alert('Enter input field');
+
+                    console.log("☎️ Dialing from", userVal, "to", custVal, messageVal);
+
+                    document.getElementById("twilioPopupDial").style.display = "none";
+                    try {
+                        const res = await axios.post("http://127.0.0.1:8000/calltool", {
+                            custPhoneNum: custVal,
+                            msg: messageVal,
+                            userPhoneNum: userVal
+                        });
+                        console.log("✅ Success:", res.data);
+                        document.getElementById("callLog").innerHTML = res.data.call_status;
+                        log(`Call initiated: ${userVal} → ${custVal}`);
+
+                    } catch (err) {
+                        console.error("❌ Error:", err);
+                        log(`Call failed: ${userVal} → ${custVal}`);
+                    }
+
+
+                    numbers.push({
+                        id: Date.now() + Math.random(),
+                        raw: custVal,
+                        normalized: normalizeNumber(custVal),
+                        status: '',
+                        selected: true
+                    });
+                    renderNumbers();
+
+                    custDialInput.value = "";
+                    document.getElementById("twilioNumberDial").value=""
+                    document.getElementById("twilioNumberDial").value=""
+                    activeDialTarget = null;
+                }
             }
-
-            numbers.push({
-                id: Date.now() + Math.random(),
-                raw: custVal,
-                normalized: normalizeNumber(custVal),
-                status: '',
-                selected: true
-            });
-            renderNumbers();
-
-            custDialInput.value = "";
-            userDialInput.value = "";
-            activeDialTarget = null;
+            catch (error) {
+                return
+            }
         };
-
-
 
         // simple simulation of calls — in real app, you'd POST to Rails endpoint which enqueues outbound calls
         // let calling = false

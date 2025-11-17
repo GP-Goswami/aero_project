@@ -1,33 +1,80 @@
-# Download the helper library from https://www.twilio.com/docs/python/install
-import os
-from twilio.rest import Client
-from dotenv import load_dotenv,find_dotenv
 
-dotenv_path=find_dotenv()
+from dotenv import load_dotenv, find_dotenv
+
+dotenv_path = find_dotenv()
 load_dotenv(dotenv_path)
 
-print(load_dotenv(dotenv_path))
+import os
+import time
+import json
+from twilio.rest import Client
 
-def toolCall(contactNum,selfNum):
-    return "callmade sucessfully"
-    account_sid = os.getenv("TWILIO_ACCOUNT_SID")
-    auth_token = os.getenv("TWILIO_AUTH_TOKEN") 
+account_sid = os.environ["TWILIO_ACCOUNT_SID"]
+auth_token = os.environ["TWILIO_AUTH_TOKEN"]
+client = Client(account_sid, auth_token)
 
-    print(account_sid,auth_token)
-    client = Client(account_sid, auth_token)
+def toolCall(contactNum, msg, selfNum):
+    try:
     
-    print("part5----------")
-    call = client.calls.create(
-        url="https://avocado-eagle-9088.twil.io/assets/groovy-vibe-427121.mp3",
-        # twiml='<Response><Play>https://avocado-eagle-9088.twil.io/assets/groovy-vibe-427121.mp3</Play></Response>',
+        call = client.calls.create(
+        url="http://demo.twilio.com/docs/voice.xml",
         to=contactNum,
-        from_=selfNum
-    )
-    print("part5----------",call)
-    print(call.sid)
-    return call
+        from_=selfNum,
+        )
 
+        print("Call SID:", call.sid)
 
-if __name__ == "__main__":
-    call=toolCall("+917987012077","+917224953542")
-    print(call.sid)
+        # Poll until final status
+        final_states = ["completed", "failed", "busy", "no-answer", "in-progress"]
+
+        status = "queued"
+
+        # Poll every second up to 15 seconds
+        for i in range(15):
+            status = client.calls(call.sid).fetch().status
+            print("Checking status:", status)
+            
+            if status in final_states:
+                break
+
+            time.sleep(2)
+
+        # Send a message
+        message = client.messages.create(
+            body=msg,
+            to=contactNum,
+            from_=selfNum
+        )
+
+        return {
+            "call_sid": call.sid,
+            "message_sid": message.sid,
+            "call_status": status
+        }
+    # try:
+    
+        
+    #     # Make a call
+    #     call = client.calls.create(
+    #         url="http://demo.twilio.com/docs/voice.xml",
+    #         to=contactNum,
+    #         from_=selfNum,
+    #         status_callback="https://subacademically-pseudoprimitive-sona.ngrok-free.dev/call-status",
+    #         status_callback_event=["initiated", "ringing", "answered", "completed"]
+    #     )
+    #     call_status = client.calls(call.sid).fetch().status
+    #     print("Call SID:", call.sid,call_status)
+
+    #     # Send a message
+    #     message = client.messages.create(
+    #         body=msg,
+    #         to=contactNum,
+    #         from_=selfNum
+    #     )
+    #     print("Message SID:", message.sid)
+
+    #     return {"call_sid": call.sid, "message_sid": message.sid, "call_status": call_status}
+    #     return {"call_sid": call.sid,  "call_status": call_status}
+    
+    except Exception as e:
+        return {"call_status":f"failed{e}"}

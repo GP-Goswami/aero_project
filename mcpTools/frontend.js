@@ -22,15 +22,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // const genBlogBtn = document.getElementById("genBlog") || document.getElementById("sendChat");
     const genBlogBtn = document.getElementById("sendChat");
     console.log(genBlogBtn);
-    
-//     function appendChat(from, msg) {
-//     const el = document.createElement('div');
-//     el.innerHTML = `<strong>${from}:</strong> ${msg}`;
-//     const area = document.getElementById('chatArea');
-//     if (!area) return console.error("❌ chatArea not found");
-//     area.appendChild(el);
-//     area.scrollTop = area.scrollHeight;
-//   }
+
+    //     function appendChat(from, msg) {
+    //     const el = document.createElement('div');
+    //     el.innerHTML = `<strong>${from}:</strong> ${msg}`;
+    //     const area = document.getElementById('chatArea');
+    //     if (!area) return console.error("❌ chatArea not found");
+    //     area.appendChild(el);
+    //     area.scrollTop = area.scrollHeight;
+    //   }
 
     if (!genBlogBtn) {
         console.warn("genBlog button not found");
@@ -44,39 +44,44 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!promptData) return alert("Please enter a prompt!");
 
         console.log("first number:", promptData);
+        document.getElementById("chatArea").innerHTML = promptData;
+        document.getElementById("chatInput").value = ""
+
         axios.post("http://127.0.0.1:8000/ask-gemini", {
             "prompt": promptData
         })
             .then(res => {
                 console.log(res)
-                if (res?.data?.tool=="prompt_blogs"){
-                console.log("✅ Success:", res.data.result);
+                if (res?.data?.tool == "prompt_blogs") {
+                    console.log("✅ Success:", res.data.result);
 
-                const container = document.querySelector(".blockedAnswers");
+                    const container = document.querySelector(".blockedAnswers");
 
-                // ek naya div banao har answer ke liye
-                const newAns = document.createElement("div");
-                newAns.classList.add("answer-box");
-                if (res?.data?.result?.result)
-                newAns.innerHTML = res.data.result.result || res.data.result;
-                else{
-                    newAns.innerHTML=res.text
+                    // ek naya div banao har answer ke liye
+                    const newAns = document.createElement("div");
+                    newAns.classList.add("answer-box");
+                    if (res?.data?.result?.result)
+                        newAns.innerHTML = res.data.result.result || res.data.result;
+                    else {
+                        newAns.innerHTML = res.text
+                    }
+
+                    // append to container
+                    container.appendChild(newAns);
+
+                    // show panel
+                    document.getElementById("blog-panel").style.display = "block";
                 }
-
-                // append to container
-                container.appendChild(newAns);
-
-                // show panel
-                document.getElementById("blog-panel").style.display = "block";
-            }
-            else {
-                    console.log("element is this one", res?.data?.response);
+                else {
 
                     const chatArea = document.getElementById("chatArea");
                     if (chatArea) {
                         const el = document.createElement("div");
                         el.className = "system";
-                        el.innerHTML = `<strong>AI:</strong> ${res?.data?.response || '(no response)'}`;
+                        el.innerHTML = `<strong>AI:</strong> ${res?.data?.response
+                            ?? JSON.parse(res?.data?.result?.result || "{}")?.call_status
+                            ?? "(no response)"
+                            }`;
                         chatArea.appendChild(el);
                         chatArea.scrollTop = chatArea.scrollHeight;
                     } else {
@@ -85,9 +90,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             })
 
-      .catch (err => {
-            console.error("❌ Error:", err);
-        });
+            .catch(err => {
+                console.error("❌ Error:", err);
+            });
 
-});
+    });
 });
