@@ -80,21 +80,25 @@ Chat with the AI to perform special tasks:
 
 ## Installation
 
-**1. Clone the Repository**
+### **1. Clone the Repository**
+
 git clone <repository-url>
 cd <project-folder>
 
-**2. Install Frontend Dependencies**
+### **2. Install Frontend Dependencies**
+
 npm install
 
-**3. Install Backend Dependencies**
+### **3. Install Backend Dependencies**
+
 pip install -r requirements.txt
 
-**4. Run the Backend Server**
-Start FastAPI using Uvicorn:
-- uvicorn test_server:app --reload
+### **4. Run the Backend Server**
 
-**5. Required Environment Variables**
+Start FastAPI using Uvicorn:
+uvicorn test_server:app --reload
+
+### **5. Required Environment Variables**
 - Create a .env file:
 - GEMINI_API_KEY=your_gemini_key
 - TWILIO_ACCOUNT_SID=your_account_sid
@@ -103,8 +107,8 @@ Start FastAPI using Uvicorn:
 
 ---
 
-### **Usage**
-**1. Start the Frontend**
+## **Usage**
+### **1. Start the Frontend**
 - Open your project in VS Code → Run Live Server to open the UI.
 
 - From the UI you can:
@@ -119,7 +123,7 @@ Start FastAPI using Uvicorn:
 
 - Chat with the AI agent
 
-**2. Backend Endpoints**
+### **2. Backend Endpoints**
 The backend exposes:
 
 Endpoint |	Purpose
@@ -131,6 +135,6 @@ Endpoint |	Purpose
 
 ---
 
-### **Contributing**
+## **Contributing**
 Contributions, issues, and feature requests are welcome.
 Feel free to open a pull request or submit an issue.
